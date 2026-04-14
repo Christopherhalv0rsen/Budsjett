@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Omsetning</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f1f5f9;
+}
+
+/* 💥 SENTRERING */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #ffffff;
+    position: relative;
+}
+
+/* container */
+.app {
+    width: 678px;
+    height: 960px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+ position: relative;
+    z-index: 1;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: url("background.png") center/cover no-repeat;
+
+    opacity: 0.20; /* 🔥 juster 0.05–0.15 */
+    pointer-events: none;
+}
+
+/* TITTEL */
+.title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+/* layout */
+.wrapper {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+}
+
+/* sylinder */
+.cylinder {
+    width: 140px;
+    height: 340px;
+    border-radius: 70px;
+    border: 2px solid rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+/* vann */
+.water {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 0%;
+    background: #0284c7;
+    transition: height 1.5s ease;
+    overflow: hidden;
+}
+
+/* bølger */
+.water::before,
+.water::after {
+    content: "";
+    position: absolute;
+    width: 200%;
+    height: 100%;
+    left: -50%;
+    border-radius: 40%;
+}
+
+.water::before {
+    background: rgba(255,255,255,0.5);
+    animation: wave 6s linear infinite;
+}
+
+.water::after {
+    background: rgba(255,255,255,0.3);
+    animation: wave 10s linear infinite reverse;
+}
+
+@keyframes wave {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(50%); }
+}
+
+/* linjer */
+.line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+}
+
+.line-label {
+    position: absolute;
+    left: 110%;
+    font-size: 12px;
+    color: #333;
+}
+
+/* side info */
+.side {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    font-size: 16px;
+}
+
+/* tekst */
+.percent { font-size: 30px; margin-top:20px;}
+.amount { font-size:14px; color:#555;}
+.remaining { font-size:16px; color:#0284c7;}
+.comment { font-size:18px; margin-top:10px;}
+
+/* fly */
+.plane {
+    position: absolute;
+    width: 80px;
+    display: none;
+}
+
+#confetti {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<canvas id="confetti"></canvas>
+
+<div class="plane" id="plane1"><img src="plane.png" width="100%"></div>
+<div class="plane" id="plane2"><img src="plane.png" width="100%"></div>
+
+<div class="title">OPPDRAG 2026</div>
+
+<div class="wrapper">
+
+    <div class="cylinder" id="cylinder">
+        <div class="water" id="water"></div>
+
+        <div class="line" id="budgetLine" style="background:#facc15;"></div>
+        <div class="line-label">1,85</div>
+
+        <div class="line" id="targetLine" style="background:#22c55e;"></div>
+        <div class="line-label">1,9</div>
+    </div>
+
+    <div class="side">
+        <div>🟢 Tur (mål): 1,9 mrd</div>
+        <div>🟡 Budsjett: 1,85 mrd</div>
+    </div>
+
+</div>
+
+<div class="percent" id="percent"></div>
+<div class="amount" id="amount"></div>
+<div class="remaining" id="remaining"></div>
+<div class="comment" id="comment"></div>
+
+</div>
+
+<script>
+const SHEET_ID = "1UpZDBs8vdwQ82NRGwBKUrc7zSkB2cypBpZ_QWOJpBxA";
+
+const max = 2500000000;
+const target = 1900000000;
+const budget = 1850000000;
+
+let hasCelebrated = false;
+
+// confetti
+function launchConfetti() {
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let pieces = Array.from({length:120}).map(() => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        size: Math.random()*6+4,
+        speed: Math.random()*2+1
+    }));
+
+    function update() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        pieces.forEach(p=>{
+            p.y += p.speed;
+            if(p.y > canvas.height){
+                p.y = -10;
+                p.x = Math.random()*canvas.width;
+            }
+            ctx.fillStyle = `hsl(${Math.random()*360},100%,50%)`;
+            ctx.fillRect(p.x,p.y,p.size,p.size);
+        });
+
+        requestAnimationFrame(update);
+    }
+
+    update();
+}
+
+// fly
+function startPlaneFlight() {
+    const plane1 = document.getElementById("plane1");
+    const plane2 = document.getElementById("plane2");
+
+    plane1.style.display = "block";
+    plane2.style.display = "block";
+
+    let x1 = -150;
+    let x2 = window.innerWidth/2;
+
+    function animate(){
+        x1 += 3;
+        x2 += 3;
+
+        let y1 = window.innerHeight*0.3 + Math.sin(x1/100)*80;
+        let y2 = window.innerHeight*0.3 + Math.sin(x2/100)*80;
+
+        if(x1 > window.innerWidth+150) x1 = -150;
+        if(x2 > window.innerWidth+150) x2 = -150;
+
+        plane1.style.transform = `translate(${x1}px,${y1}px)`;
+        plane2.style.transform = `translate(${x2}px,${y2}px)`;
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+}
+
+// hent data
+async function loadData(){
+    const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47, text.length-2));
+    const value = Number(json.table.rows[0].c[0].v);
+
+    update(value);
+}
+
+function update(value){
+
+    const percent = Math.min((value/max)*100,100);
+    document.getElementById("water").style.height = percent+"%";
+
+    document.getElementById("percent").innerText =
+        (value/target*100).toFixed(1)+"%";
+
+    document.getElementById("amount").innerText =
+        value.toLocaleString("no-NO")+" kr";
+
+    const remaining = Math.max(target-value,0);
+    document.getElementById("remaining").innerText =
+        remaining>0 ? remaining.toLocaleString("no-NO")+" kr igjen" : "MÅL NÅDD";
+
+    document.getElementById("budgetLine").style.bottom=(budget/max*100)+"%";
+    document.getElementById("targetLine").style.bottom=(target/max*100)+"%";
+
+    if(value>=target && !hasCelebrated){
+        launchConfetti();
+        startPlaneFlight();
+        hasCelebrated=true;
+    }
+
+    document.getElementById("comment").innerText =
+        value>=target ? "OPPDRAG 2026 FULLFØRT!" : "🚧 Vi er i gang";
+}
+
+loadData();
+setInterval(loadData,5000);
+</script>
+
+</body>
+</html>
